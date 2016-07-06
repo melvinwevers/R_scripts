@@ -7,7 +7,7 @@ library("RColorBrewer")
 library(gridExtra)
 library(data.table)
 library(stm)
-library(RWeka)
+#library(RWeka)
 library(slam)
 library(plotly)
 
@@ -78,32 +78,6 @@ ggplot(df2.year, aes(x = df2.year$year, y = df2.year$rel.freq)) +
 ggsave("CorpusB_rel_ads.pdf", width=10, height=5)
 
 
-
-for (j in seq(df$mergedText))
-{
-  #a[[j]] <- gsub("dollar imperialisten", "dollarimperialisme", a[[j]])
-  #a[[j]] <- gsub("dollar imperialisme", "dollarimperialisme", a[[j]])
-  #a[[j]] <- gsub("amerikaansch imperialisme", "amerikaansimperialisme", a[[j]])
-  #a[[j]] <- gsub("amerikaansche imperialisme", "amerikaansimperialisme", a[[j]])
-  #a[[j]] <- gsub("amerikaans imperialisme", "amerikaansimperialisme", a[[j]])
-  #a[[j]] <- gsub("amerikaanse imperialisten", "amerikaansimperialisme", a[[j]])
-  #a[[j]] <- gsub("amerikaansche imperialisten", "amerikaansimperialisme", a[[j]])
-  #a[[j]] <- gsub("amerikaanse imperialisme", "amerikaansimperialisme", a[[j]])
-  df$mergedText[[j]] <- gsub("verenigde staten", "verenigdestaten", a[[j]])
-  
-}
-
-
-#pre-processing / cleaning text
-a <- Corpus(DataframeSource(df[c("title", "text")]))
-a <- Corpus(DataframeSource(df[c("title")]))
-a <- Corpus(DataframeSource(df[c("mergedText")]))
-a <- tm_map(a, removePunctuation)
-a <- tm_map(a, content_transformer(tolower))
-a <- tm_map(a, stripWhitespace)
-a <- tm_map(a, removeNumbers)
-a <- tm_map(a, removeWords, c(stopwords("dutch")))
-
 #function to concatenate words
 for (j in seq(a))
 {
@@ -115,10 +89,33 @@ for (j in seq(a))
   #a[[j]] <- gsub("amerikaanse imperialisten", "amerikaansimperialisme", a[[j]])
   #a[[j]] <- gsub("amerikaansche imperialisten", "amerikaansimperialisme", a[[j]])
   #a[[j]] <- gsub("amerikaanse imperialisme", "amerikaansimperialisme", a[[j]])
-  a[[j]] <- gsub("verenigde staten", "verenigdestaten", a[[j]])
-  a[[j]] <- gsub("vereenigde staten", "verenigdestaten", a[[j]])
+  #a[[j]] <- gsub("vereenigde staten", "verenigdestaten", a[[j]])
   
 }
+
+#pre-processing / cleaning text
+a <- Corpus(DataframeSource(df[c("title", "text")]))
+a <- Corpus(DataframeSource(df[c("title")]))
+a <- Corpus(DataframeSource(df[c("mergedText")]))
+a <- tm_map(a, removePunctuation)
+a <- tm_map(a, content_transformer(tolower))
+a <- tm_map(a, content_transformer(gsub), pattern = "verfris[a-z]*", replacement = "verfrissend")
+a <- tm_map(a, content_transformer(gsub), pattern = "verkwik[a-z]*", replacement = "verkwikkend")
+a <- tm_map(a, content_transformer(gsub), pattern = "internationa[a-z]*", replacement = "international")
+a <- tm_map(a, content_transformer(gsub), pattern = "fijn[a-z]*", replacement = "fijne")
+a <- tm_map(a, content_transformer(gsub), pattern = "apart[a-z]*", replacement = "aparte")
+a <- tm_map(a, content_transformer(gsub), pattern = "heerlijk[a-z]*", replacement = "heerlijke")
+a <- tm_map(a, content_transformer(gsub), pattern = "bijzonder[a-z]*", replacement = "bijzondere")
+a <- tm_map(a, content_transformer(gsub), pattern = "gezellig[a-z]*", replacement = "gezellig")
+a <- tm_map(a, content_transformer(gsub), pattern = "standaardfles[a-z]*", replacement = "standaardfles")
+a <- tm_map(a, content_transformer(gsub), pattern = "gezinsfles[a-z]*", replacement = "gezinsfles")
+a <- tm_map(a, content_transformer(gsub), pattern = "literfles[a-z]*", replacement = "literfles")
+a <- tm_map(a, content_transformer(gsub), pattern = "fles[a-z]*", replacement = "fles")
+a <- tm_map(a, content_transformer(gsub), pattern = "king?size", replacement = "kingsize")
+a <- tm_map(a, content_transformer(gsub), pattern = "echte", replacement = "echt")
+a <- tm_map(a, stripWhitespace)
+a <- tm_map(a, removeNumbers)
+a <- tm_map(a, removeWords, c(stopwords("dutch")))
 a <- tm_map(a, PlainTextDocument)
 
 #turn corpus into document term matrix, with different configurations
@@ -154,7 +151,7 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 9000, scale=c(1,0.5),
           max.words=150, random.order=FALSE, rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 
-#STM (Structural topic modeling)
+####STM (Structural topic modeling)
 #processed <- readCorpus(a.dtm, type =("slam")) # use own dtm
 
 processed <- textProcessor(df$mergedText, metadata = df, lowercase = TRUE, removestopwords = TRUE,
@@ -183,14 +180,6 @@ corpusPrevFit <- stm(out$documents, out$vocab, K = 20,
                      max.em.its = 75, 
                      data=out$meta, init.type = "Spectral")
 
-#poliblogPrevFit <- stm(out$documents, out$vocab, K = 20,
-#                       prevalence =~ newspaper + year, max.em.its = 75,
-#                       data = out$meta, init.type = "Spectral")
-
-#corpusModelSelect <- selectModel(out$documents, out$vocab, K = 20,
-#                              max.em.its = 75, data = out$meta, runs = 20, seed = 8458159)
-
-
 labelTopics(corpusPrevFit, seq(1,50, by = 1))
 labelTopics(corpusPrevFit, c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50))
 labelTopics(corpusPrevFit, c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15))
@@ -210,22 +199,23 @@ prep <- estimateEffect(1:20 ~ corpusPrevFit,
 mod.out.corr <- topicCorr(corpusPrevFit)
 plot.topicCorr(mod.out.corr, topics = c(1,2,3,5,8,9,10,11,14,15))
 
-
+#####
 #plotting words within corpus
 #turn back into dataframe for plotting word frequencies within corpus
 df3 <- as.data.frame(as.matrix(a.dtm))
 df3$date <- as.Date(df$date,"%Y-%m-%d")
-agg = aggregate(df3[c("arabische", "amerikaanse", "olympische", "zuidafrika", "israël")], by=list(year(df3$date)), 
-                FUN=sum, na.rm=TRUE)
-
-#rel.agg <- agg[(13:113), -1] / total_article$number_article
-rel.agg <- agg[, -1] / total_article$number_article
-rel.agg$date <- agg$Group.1
-
-agg <- melt(agg, id="Group.1")
-rel.agg <- melt(rel.agg, id="date")
+agg = aggregate(df3[c("international", "landen", "wereld")], by=list(year(df3$date)), 
+                FUN=sum, na.rm=FALSE)
 colnames(agg)[1] <- "year"
-colnames(rel.agg)[1] <- "year"
+number_ads <- merge(agg, total_ads) #match number of ads to dataframe
+number_articles <- merge(agg, total_article) #match number of articles to dataframe
+
+rel.agg <- agg[, -1] / total_article$number_article * 1000 # relative frequency aggregates articles
+rel.agg <- agg[, -1] / number_ads$number_ad * 1000# relative frequency aggregates advertisements
+rel.agg$year <- agg$year
+
+agg <- melt(agg, id="year")
+rel.agg <- melt(rel.agg, id="year")
 colnames(agg)[2] <- "keyword"
 colnames(rel.agg)[2] <- "keyword"
 
@@ -243,22 +233,18 @@ colnames(rel.agg)[2] <- "keyword"
   scale_y_continuous(breaks=pretty_breaks(n=15)) +
   xlab("Year")+ylab("Relative Frequency per 1000 Articles")
 
-
+#multiple values line chart
 ggplot(data=rel.agg, aes(x=year, y=value, group = keyword, colour = keyword)) +
   geom_line() +
   theme_bw() +
-  #geom_point( size=4, shape=1, fill="white")
-  scale_x_continuous(breaks=pretty_breaks(n=10), limit = c(1945,1990)) +
+  geom_point(size=1, shape=1, na.rm=TRUE) +
+  scale_x_continuous(breaks=pretty_breaks(n=10), limit = c(1928,1989)) +
   scale_y_continuous(breaks=pretty_breaks(n=10)) +
-  xlab("Year")+ylab("Relative Frequency per 1000 Articles")
+  xlab("Year")+ylab("Relative Frequency per 1000 Ads")
 
- 
-ggplot(data = rel.agg, aes(x=year, y=value)) + geom_line(aes(fill=keyword)) +
-  scale_x_continuous(breaks=pretty_breaks(n=20), limit = c(1890,1990)) +
-  scale_y_continuous(breaks=pretty_breaks(n=10)) +
-  xlab("Year")+ylab("Relative Frequency per 1000 Articles")
+ggsave("keywords_world.pdf", width=10, height=5)
 
-
+#word within total corpus
 ggplot() +
   geom_line(data = agg, aes(color ="Pepsi", x = year, y = value)) +
   geom_line(data = df2.year, aes(color ="Corpus A", x = df2.year$year, y = df2.year$article.count)) +
@@ -266,7 +252,7 @@ ggplot() +
   
 
 
-
+#work in progress
 ggplot(agg, aes(x = year, y = value)) + 
   geom_line(aes(color="black")) + 
   geom_smooth(colour = "red") +
@@ -280,14 +266,6 @@ ggplot(agg, aes(x = year, y = value)) +
 ggplot(data=rel.agg, aes(x=year, y=value, fill=keyword)) +
   geom_line(stat="identity") +
   #scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
-  theme_bw() +
-  scale_x_continuous(breaks=pretty_breaks(n=10)) +
-  scale_y_continuous(breaks=pretty_breaks(n=20)) +
-  xlab("Year")+ylab("Article Count")
-
-ggplot(data=agg,
-       aes(x=year, y=value, colour=keyword)) +
-  geom_bar(stat="identity") +
   theme_bw() +
   scale_x_continuous(breaks=pretty_breaks(n=10)) +
   scale_y_continuous(breaks=pretty_breaks(n=20)) +

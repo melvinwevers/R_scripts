@@ -7,7 +7,6 @@ library("RColorBrewer")
 library(gridExtra)
 library(data.table)
 library(stm)
-#library(RWeka)
 library(slam)
 library(plotly)
 
@@ -15,15 +14,19 @@ library(plotly)
 #load files and put into correct format
 #setwd("/Users/wevers/Dropbox/DH-projects/CaseStudy Coca-Cola/Articles/Multinationals/all") #set working directory
 temp = list.files(pattern="*.csv") #load list of files  does not load multiple files
-df <- read.csv(temp, header=TRUE, stringsAsFactors=F, sep = ',') #put files into dataframe
+df <- read.csv(temp, header=FALSE, stringsAsFactors=F, sep = '\t') #put files into dataframe
 
-colnames(df) <- c("date", "newspapers", "title", "text") #add column names
+colnames(df) <- c("date", "newspaper", "title", "text") #add column names
 df$mergedText = paste(df$title, df$text, sep=" ") #merge title + textcontent
 df$date <- as.Date(df$date,"%Y-%m-%d") #add date colum
 df$year <- format(as.Date(df$date), "%Y") #year column
 
 total_article <- read.csv("/Users/wevers/Dropbox/DH-projects/article_count_final.csv", sep = ',') # load total number of articles in corpus
 total_ads <- read.csv("/Users/wevers/Dropbox/DH-projects/advertisement_count.csv", sep = ',') # load total number of advertisements in corpus
+
+## Additional corpora
+origin <- read.csv ("/Users/wevers/Dropbox/DH-projects/CaseStudy_Coca-Cola/origin.csv")
+boycot <- read.csv ("/Users/wevers/Dropbox/DH-projects/boycott.csv")
 
 ################
 # Article counter function
@@ -34,36 +37,45 @@ countArticles <- function(timeStamps) {
   data.frame(date = allDates, article.count = article.count)
 }
 
-df2 <- countArticles(df$date) #count article
-df2.year <- setDT(df2)[, lapply(.SD, sum), by=.(year(df2$date))] #aggregate year count
+df3 <- countArticles(df$date) #count article
+df3.year <- setDT(df3)[, lapply(.SD, sum), by=.(year(df3$date))] #aggregate year count
 
-df2.year<- df2.year[year>="1890" & year<="1989"] #select years to analyze
-total_article <- total_article[(39:100),] #select years to analyze 1:1890 100:1989 >> fix the index
+df3.year<- df3.year[year>="1928" & year<="1989"] #select years to analyze
+total_article <- total_article[(56:100),] #select years to analyze 1:1890 100:1989 >> fix the index
 total_ads <- total_ads[(39:100),] #select years to analyze 1:1890 100:1989 >> fix the index
 
-df2.year$rel.freq <- df2.year$article.count / total_article$number_article * 1000 #calculate rel frequency per 1000 articles
+df3.year$rel.freq <- df3.year$article.count / total_article$number_article * 1000 #calculate rel frequency per 1000 articles
 df2.year$rel.freq <- df2.year$article.count / total_ads$number_ad * 1000 #calculate rel frequency per 1000 advertisements
 
 
 ##plot two corpora 
 ggplot() +
+  theme_bw() +
   geom_line(data = df3.year, aes(color ="Corpus A", x = df3.year$year, y = df3.year$rel.freq)) +
   geom_smooth(data = df3.year, aes(color ="Corpus A", x = df3.year$year, y = df3.year$rel.freq)) +
   geom_line(data = df2.year, aes(color ="Corpus B", x = df2.year$year, y = df2.year$rel.freq)) +
   geom_smooth(data = df2.year, aes(color ="Corpus B", x = df2.year$year, y = df2.year$rel.freq)) +
-  scale_colour_manual(name = "keywords", values=c("#e50000","#029386")) +
+  scale_colour_manual(name = "Corpus", values=c("#e50000","#029386")) +
   scale_x_continuous(breaks=pretty_breaks(n=10)) +
   scale_y_continuous(breaks=pretty_breaks(n=20),limit=c(0,NA),oob=squish) +
-  xlab("Year")+ylab("Relative Frequency per 1000 articles")
+  xlab("Year")+ylab("Relative Frequency per 1,000 articles")
 
-#ggplot() +
-#  geom_line(data = agg, aes(color ="Pepsi", x = year, y = value)) +
-#  geom_line(data = df2.year, aes(color ="Corpus A", x = df2.year$year, y = df2.year$article.count)) +
-#  scale_colour_manual(name = "keywords", values=c("#e50000","#029386"))
+ggsave("CorpusA_CorpusB_rel_freq.pdf", width=10, height=5)
+
+ggplot() +
+  theme_bw()+
+  geom_line(data = df3.year, aes(color ="Pepsi in Corpus A", x = df3.year$year, y = df3.year$article.count)) +
+  geom_line(data = df2.year, aes(color ="Corpus A", x = df2.year$year, y = df2.year$article.count)) +
+  scale_colour_manual(name = "Corpora", values=c("#e50000","#029386")) +
+  scale_x_continuous(breaks=pretty_breaks(n=10)) +
+  scale_y_continuous(breaks=pretty_breaks(n=15),limit=c(0,NA),oob=squish) + 
+  xlab("Year")+ylab("Article count")
+
+ggsave("Pepsi_CorpusA.pdf", width=10, height=5)
 
 ###############
 ##plot article count
-ggplot(df2.year, aes(x = df2.year$year, y = df2.year$rel.freq)) + 
+ggplot(df3.year, aes(x = df3.year$year, y = df3.year$rel.freq)) + 
   geom_line(aes(color="black")) + 
   geom_smooth(colour = "red") +
   theme_bw() + 
@@ -71,11 +83,11 @@ ggplot(df2.year, aes(x = df2.year$year, y = df2.year$rel.freq)) +
   scale_y_continuous(breaks=pretty_breaks(n=15),limit=c(0,NA),oob=squish) +
   scale_color_manual(values=c("black"="black"),guide=FALSE) + 
   #scale_x_date(breaks = date_breaks("5 years"), labels = date_format("%Y"), limits = as.Date(c('1929-01-01','1989-12-31'))) + 
-  xlab("Year")+ylab("Relative Frequency per 1000 Ads")
+  xlab("Year")+ylab("Relative Frequency per 1,000 articles")
   #labs(title="Number of A with references to 'Average American'  in Newspapers (1890 and 1989)")
 
 
-ggsave("CorpusB_rel_ads.pdf", width=10, height=5)
+ggsave("dollarland.pdf", width=10, height=5)
 
 
 #function to concatenate words
@@ -202,15 +214,16 @@ plot.topicCorr(mod.out.corr, topics = c(1,2,3,5,8,9,10,11,14,15))
 #####
 #plotting words within corpus
 #turn back into dataframe for plotting word frequencies within corpus
-df3 <- as.data.frame(as.matrix(a.dtm))
-df3$date <- as.Date(df$date,"%Y-%m-%d")
-agg = aggregate(df3[c("international", "landen", "wereld")], by=list(year(df3$date)), 
+df2 <- as.data.frame(as.matrix(a.dtm))
+df2$date <- as.Date(df$date,"%Y-%m-%d")
+agg = aggregate(df2[c("atlanta", "candler", "formule", "pemberton")], by=list(year(df2$date)), #enter keywords here
                 FUN=sum, na.rm=FALSE)
 colnames(agg)[1] <- "year"
+#agg <- agg[1:46,] #select time period to analyze (i.e. 1928-1977)
 number_ads <- merge(agg, total_ads) #match number of ads to dataframe
 number_articles <- merge(agg, total_article) #match number of articles to dataframe
 
-rel.agg <- agg[, -1] / total_article$number_article * 1000 # relative frequency aggregates articles
+#rel.agg <- agg[, -1] / number_articles$number_article * 1000 # relative frequency aggregates articles
 rel.agg <- agg[, -1] / number_ads$number_ad * 1000# relative frequency aggregates advertisements
 rel.agg$year <- agg$year
 
@@ -219,30 +232,43 @@ rel.agg <- melt(rel.agg, id="year")
 colnames(agg)[2] <- "keyword"
 colnames(rel.agg)[2] <- "keyword"
 
-#agg.rel = aggregate(rel.df3[c("amerika", "duitsland")], by=list(year(rel.df3$date)), 
-#                FUN=sum, na.rm=TRUE)
-#agg.rel <- melt(agg.rel, id="Group.1")
-#colnames(agg.rel)[1] <- "date"
+number_articles <- merge(origin, total_article) #match number of articles to dataframe
+rel.origin <- origin[, -1] / number_articles$number_article * 1000 # relative frequency aggregates articles
+
+rel.origin$year <- origin$year
+
+rel.origin2 <- melt(rel.origin, id="year")
+colnames(rel.origin2)[2] <- "keyword"
+
+number_articles <- merge(boycot, total_article) #match number of articles to dataframe
+rel.boycot <- boycot[, -1] / number_articles$number_article * 1000 # relative frequency aggregates articles
+
+rel.boycot$year <- boycot$year
+
+rel.boycot2 <- melt(rel.boycot, id="year")
+colnames(rel.boycot2)[2] <- "keyword"
   
 #multiple values barchart
-  ggplot(data=rel.agg, 
+  ggplot(data=rel.origin2, 
          aes(x=year, y=value, fill=keyword)) +
-  geom_bar(stat="identity", position= "dodge") +
+  geom_bar(stat="identity", ) +
   theme_bw() +
   scale_x_continuous(breaks=pretty_breaks(n=10)) +
   scale_y_continuous(breaks=pretty_breaks(n=15)) +
-  xlab("Year")+ylab("Relative Frequency per 1000 Articles")
+  xlab("Year")+ylab("Relative Frequency per 1,000 Articles")
+
+ggsave("origin.pdf", width=10, height=5)
 
 #multiple values line chart
-ggplot(data=rel.agg, aes(x=year, y=value, group = keyword, colour = keyword)) +
+ggplot(data=rel.boycot2, aes(x=year, y=value, group = keyword, colour = keyword)) +
   geom_line() +
   theme_bw() +
   geom_point(size=1, shape=1, na.rm=TRUE) +
-  scale_x_continuous(breaks=pretty_breaks(n=10), limit = c(1928,1989)) +
+  scale_x_continuous(breaks=pretty_breaks(n=10), limit = c(1945,1989)) +
   scale_y_continuous(breaks=pretty_breaks(n=10)) +
-  xlab("Year")+ylab("Relative Frequency per 1000 Ads")
+  xlab("Year")+ylab("Relative Frequency per 1,000 articles")
 
-ggsave("keywords_world.pdf", width=10, height=5)
+ggsave("boycot.pdf", width=10, height=5)
 
 #word within total corpus
 ggplot() +

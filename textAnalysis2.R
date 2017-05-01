@@ -52,6 +52,19 @@ features_american <- read.csv("/Users/wevers/Dropbox/DH-projects/features_americ
 materiality_american <- read.csv("/Users/wevers/Dropbox/DH-projects/materiality_american.csv", sep = ',')
 popularity_cig <- read.csv("/Users/wevers/Dropbox/DH-projects/international_fame_cig.csv", sep = ',')
 
+
+##plot two corpora 
+ggplot() +
+  geom_line(data = df3.year, aes(color ="Corpus A", x = df3.year$year, y = df3.year$rel.freq)) +
+  geom_smooth(data = df3.year, aes(color ="Corpus A", x = df3.year$year, y = df3.year$rel.freq)) +
+  geom_line(data = df2.year, aes(color ="Corpus B", x = df2.year$year, y = df2.year$rel.freq)) +
+  geom_smooth(data = df2.year, aes(color ="Corpus B", x = df2.year$year, y = df2.year$rel.freq)) +
+  scale_colour_manual(name = "keywords", values=c("#e50000","#029386")) +
+  scale_x_continuous(breaks=pretty_breaks(n=10)) +
+  scale_y_continuous(breaks=pretty_breaks(n=20),limit=c(0,NA),oob=squish) +
+  xlab("Year")+ylab("Relative Frequency per 1000 articles")
+
+##plot number of cigarettes smoked per capita
 ggplot(smoking, aes(x = smoking$year, y = smoking$number)) + 
   geom_line(aes(color="black")) + 
   geom_smooth(colour = "red") +
@@ -347,7 +360,16 @@ ggplot(data=american_cigarette,
   scale_y_continuous(breaks=pretty_breaks(n=15)) +
   xlab("Year")+ylab("Relative Frequency per 1000 Articles")
 
-ggsave("americna_cigarette.pdf", width=10, height=5)
+ggsave("american_cigarette.pdf", width=10, height=5)
+
+#multiple values barchart
+ggplot(data=rel.agg, 
+       aes(x=year, y=value, fill=keyword)) +
+  geom_bar(stat="identity", position= "dodge") +
+  theme_bw() +
+  scale_x_continuous(breaks=pretty_breaks(n=10)) +
+  scale_y_continuous(breaks=pretty_breaks(n=15)) +
+  xlab("Year")+ylab("Relative Frequency per 1000 Articles")
 
 #multiple values line chart
 ggplot(data=rel.agg, aes(x=year, y=value, group = keyword, colour = keyword)) +
@@ -373,3 +395,5 @@ ggplot(data=rel.agg, aes(x=year, y=value, fill=keyword)) +
   scale_x_continuous(breaks=pretty_breaks(n=10)) +
   scale_y_continuous(breaks=pretty_breaks(n=20)) +
   xlab("Year")+ylab("Article Count")
+
+

@@ -12,10 +12,10 @@ library(slam)
 
 #load files and put into correct format
 #setwd("/Users/wevers/Dropbox/DH-projects/CaseStudy Coca-Cola/Articles/Multinationals/all") #set working directory
-temp = list.files(pattern="*.txt") #load list of files  #fix--does not yet load multiple files
-df <- read.csv(temp, header=FALSE, stringsAsFactors=F, sep = ',') #put files into dataframe
+temp = list.files(pattern="*.csv") #load list of files  #fix--does not yet load multiple files
+df <- read.csv(temp, header=FALSE, stringsAsFactors=F, sep = '\t') #put files into dataframe
 
-colnames(df) <- c("date", "newspapers", "title", "text") #add column names to csv file (change this if columns differ)
+colnames(df) <- c("text") #add column names to csv file (change this if columns differ)
 df$mergedText = paste(df$title, df$text, sep=" ") #merge title + textcontent into a new column 
 df$date <- as.Date(df$date,"%Y-%m-%d") #add date colum as date column
 df$year <- format(as.Date(df$date), "%Y") #year column
@@ -114,29 +114,10 @@ ggsave("article_ads_per_issue.pdf", width=10, height=5)
 
 
   #pre-processing / cleaning text in corpus 
-a <- Corpus(DataframeSource(df[c("title", "text")])) 
-a <- Corpus(DataframeSource(df[c("title")]))
-a <- Corpus(DataframeSource(df[c("mergedText")]))
+a <- Corpus(DataframeSource(df[c("text")]))
 a <- tm_map(a, removePunctuation)
 a <- tm_map(a, content_transformer(tolower))
-a <- tm_map(a, content_transformer(gsub), pattern = "verfris[a-z]*", replacement = "verfrissend")
-a <- tm_map(a, content_transformer(gsub), pattern = "verkwik[a-z]*", replacement = "verkwikkend")
-a <- tm_map(a, content_transformer(gsub), pattern = "internationa[a-z]*", replacement = "international")
-a <- tm_map(a, content_transformer(gsub), pattern = "fijn[a-z]*", replacement = "fijne")
-a <- tm_map(a, content_transformer(gsub), pattern = "apart[a-z]*", replacement = "aparte")
-a <- tm_map(a, content_transformer(gsub), pattern = "heerlijk[a-z]*", replacement = "heerlijke")
-a <- tm_map(a, content_transformer(gsub), pattern = "bijzonder[a-z]*", replacement = "bijzondere")
-a <- tm_map(a, content_transformer(gsub), pattern = "gezellig[a-z]*", replacement = "gezellig")
-a <- tm_map(a, content_transformer(gsub), pattern = "standaardfles[a-z]*", replacement = "standaardfles")
-a <- tm_map(a, content_transformer(gsub), pattern = "gezinsfles[a-z]*", replacement = "gezinsfles")
-a <- tm_map(a, content_transformer(gsub), pattern = "literfles[a-z]*", replacement = "literfles")
-a <- tm_map(a, content_transformer(gsub), pattern = "fles[a-z]*", replacement = "fles")
-a <- tm_map(a, content_transformer(gsub), pattern = "king?size", replacement = "kingsize")
-a <- tm_map(a, content_transformer(gsub), pattern = "echte", replacement = "echt")
-a <- tm_map(a, content_transformer(gsub), pattern = "arabisch", replacement = "arabische")
-a <- tm_map(a, content_transformer(gsub), pattern = "amerikaans*", replacement = "amerikaanse")
-a <- tm_map(a, content_transformer(gsub), pattern = "olympisch", replacement = "olympische")
-a <- tm_map(a, content_transformer(gsub), pattern = "zuid-afrika*", replacement = "zuidafrika")
+a <- tm_map(a, content_transformer(gsub), pattern = "advertentie", replacement = "")
 a <- tm_map(a, stripWhitespace)
 a <- tm_map(a, removeNumbers)
 a <- tm_map(a, removeWords, c(stopwords("dutch")))
@@ -144,10 +125,12 @@ a <- tm_map(a, removeWords, c(stopwords("dutch")))
 #function to concatenate words
 for (j in seq(a))
 {
-  a[[j]] <- gsub("arabisch", "arabische", a[[j]])
-  a[[j]] <- gsub("amerikaans", "amerikaanse", a[[j]])
-  a[[j]] <- gsub("olympisch", "olympische", a[[j]])
-  a[[j]] <- gsub("zuid-afrika", "zuidafrika", a[[j]])
+  a[[j]] <- gsub("image", "", a[[j]])
+  a[[j]] <- gsub("omitted", "", a[[j]])
+  a[[j]] <- gsub("the", "", a[[j]])
+  a[[j]] <- gsub("bram", "", a[[j]])
+  a[[j]] <- gsub("steije", "", a[[j]])
+  a[[j]] <- gsub("durk", "", a[[j]])
   #a[[j]] <- gsub("amerikaans imperialisme", "amerikaansimperialisme", a[[j]])
   #a[[j]] <- gsub("amerikaanse imperialisten", "amerikaansimperialisme", a[[j]])
   #a[[j]] <- gsub("amerikaansche imperialisten", "amerikaansimperialisme", a[[j]])
@@ -163,7 +146,7 @@ a <- tm_map(a, PlainTextDocument)
 a.dtm <- DocumentTermMatrix (a)
 
 a.dtm <- DocumentTermMatrix(a, control = 
-                              list(wordLengths = c(4,Inf), bounds = list(global = c(length(a)*0.01,length(a)*0.99))))
+                              list(wordLengths = c(4,Inf)))
 
 a.dtm <- DocumentTermMatrix(a, control = 
                               list(wordLengths = c(5,Inf)))
@@ -180,7 +163,7 @@ dim(m_freq)
 write.csv(m_freq, file="dtm.csv")  
 
 #find associations to particular words
-findAssocs(a.dtm, "boycot", corlimit=0.15)
+findAssocs(a.dtm, "joris", corlimit=0.20)
 
 #word cloud
 m <- as.matrix(a.dtm)
@@ -188,23 +171,23 @@ v <- sort(colSums(m),decreasing=TRUE)
 d <- data.frame(word = names(v),freq=v)
 head(d,100)
 set.seed(1234)
-wordcloud(words = d$word, freq = d$freq, min.freq = 9000, scale=c(1,0.5),
-          max.words=150, random.order=FALSE, rot.per=0.35, 
+wordcloud(words = d$word, freq = d$freq, min.freq = 9000, scale=c(5,0.5),
+          max.words=250, random.order=FALSE, rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 
 ####STM (Structural topic modeling)
 #processed <- readCorpus(a.dtm, type =("slam")) # use own dtm
-processed <- textProcessor(df$mergedText, metadata = df, lowercase = TRUE, removestopwords = TRUE,
+processed <- textProcessor(df$text_content, metadata = df, lowercase = TRUE, removestopwords = TRUE,
                            removenumbers = TRUE, removepunctuation = TRUE, stem = FALSE,
-                           wordLengths = c(4,Inf), sparselevel = 1, language = "nl", 
+                           wordLengths = c(4,Inf), sparselevel = .95, language = "nl", 
                            verbose = TRUE, onlycharacter = FALSE, striphtml = TRUE,
                            customstopwords = NULL, onlytxtfiles = FALSE)
 
 #determine how many documents to remove
-plotRemoved(processed$documents, lower.thresh = seq(1, 100, by = 1))
+plotRemoved(processed$documents, lower.thresh = seq(1, 50, by = 1))
 
 out <- prepDocuments(processed$documents, processed$vocab, 
-                     lower.thresh = 6) #change this number based on graph
+                     lower.thresh = 10) #change this number based on graph
 docs <- out$documents
 vocab <- out$vocab
 
@@ -217,7 +200,7 @@ storage <- searchK(out$documents, out$vocab, K = c(5), #change these settings to
 plot.searchK(storage)
 
 
-TopicModelFit <- stm(out$documents, out$vocab, K = 50,
+TopicModelFit <- stm(out$documents, out$vocab, K = 15,
                      max.em.its = 150, 
                      data=out$meta, init.type = "Spectral")
 

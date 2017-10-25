@@ -24,17 +24,18 @@ total_corpus <- read.csv("/Users/wevers/Dropbox/DH-projects/corpus_count.csv", s
 ocr_quality <-read.csv("/Users/wevers/Dropbox/DH-projects/newspaper_quality.csv", sep =',')
 smoking_nationalities <- read.csv("/Users/wevers/Dropbox/DH-projects/CaseStudy_Sigarettes/articles/2_Nationalities/Nationalities_rel.csv")
 women_smoking <- read.csv ("/Users/wevers/Dropbox/DH-projects/CaseStudy_Sigarettes/articles/Gender/women_and_smoking_abs.csv")
-health_smoking <- read.csv ("/Users/wevers/Dropbox/DH-projects/CaseStudy_Sigarettes/articles/health/health.csv")
+health_smoking <- read.csv ("/Users/wevers/source/PhD/DerivedData/CaseStudy_Cigarettes/Articles/csv/health.csv")
 america_articles <- read.csv ("/Users/wevers/Dropbox/DH-projects/CaseStudy_America/articles/articles_america.csv")
 df4.year <- read.csv ("/Users/wevers/Dropbox/DH-projects/corpusC_cigarettes.csv")
 america_corpus <- read.csv ("/Users/wevers/Dropbox/DH-projects/AmerikaInCorpus.csv")
 corpus_filtered <- read.csv("/Users/wevers/Dropbox/DH-projects/articles_ads_filtered.csv")
 
-total_article <- read.csv("/Users/wevers/Dropbox/DH-projects/article_count_final.csv", sep = ',') # load total number of articles in corpus
+total_article <- read.csv("/Users/wevers/Downloads/article_count_final.csv", sep = ',') # load total number of articles in corpus
 total_ads <- read.csv("/Users/wevers/Dropbox/DH-projects/advertisement_count.csv", sep = ',') # load total number of advertisements in corpus
 
 health_smoking2 <- health_smoking / total_article$number_article *100000
 health_smoking2$year <- health_smoking$year
+write.csv(file="fig.csv", x=health_smoking2)
 
 ################# Article counter function ##############
 countArticles <- function(timeStamps) {
